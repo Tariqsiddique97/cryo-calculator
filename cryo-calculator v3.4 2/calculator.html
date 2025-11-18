@@ -275,11 +275,58 @@
 
       /* Split/Reserve page tweaks */
       .split h1 {
-        margin: 0 0 8px;
-        font-size: 22px;
+        margin: 0 0 12px;
+        font-size: 20px;
+        font-weight: 600;
       }
       .split .btn {
-        width: 100%;
+        width: auto;
+      }
+
+      /* Split/Reserve smaller fonts per client request */
+      #pane-split .muted,
+      #pane-reserve .muted {
+        font-size: 11px;
+        margin-top: 3px;
+      }
+      #pane-split .muted b,
+      #pane-reserve .muted b {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      /* Tank section styling - no box, just spacing */
+      .tank-section {
+        margin-top: 20px;
+      }
+      .tank-header {
+        font-size: 14px;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 8px;
+      }
+      .tank-section .row2 {
+        margin-bottom: 8px;
+      }
+      #pane-split .row2,
+      #pane-reserve .row2 {
+        gap: 10px;
+        margin-top: 8px;
+      }
+      /* Smaller buttons for Split/Reserve panes */
+      #pane-split .sticky-actions,
+      #pane-reserve .sticky-actions {
+        gap: 8px;
+      }
+      #pane-split .sticky-actions button,
+      #pane-reserve .sticky-actions button {
+        font-size: 14px;
+        padding: 8px 16px;
+        flex: 1;
+      }
+      #pane-split .btn-primary,
+      #pane-reserve .btn-primary {
+        font-size: 14px;
+        padding: 8px 14px;
       }
       .err {
         margin-top: 8px;
@@ -467,7 +514,7 @@
         margin-top: 4px;
       }
 
-      /* Ensure consistent field sizing across all panes */
+      /* Ensure consistent field sizing for all panes */
       #pane-calc input[type="number"],
       #pane-calc input[type="text"],
       #pane-calc select,
@@ -481,16 +528,10 @@
         padding: 10px 12px;
       }
 
-      /* Compact mode consistency */
+      /* Compact mode for Calculator pane */
       .compact #pane-calc input[type="number"],
       .compact #pane-calc input[type="text"],
-      .compact #pane-calc select,
-      .compact #pane-split input[type="number"],
-      .compact #pane-split input[type="text"],
-      .compact #pane-split select,
-      .compact #pane-reserve input[type="number"],
-      .compact #pane-reserve input[type="text"],
-      .compact #pane-reserve select {
+      .compact #pane-calc select {
         font-size: 15px;
         padding: 8px 10px;
       }
@@ -660,76 +701,82 @@
           <div class="page split">
             <h1>Cryo Split Calculator</h1>
 
-            <label>
-              Total SCF
-              <input id="totalScf" type="number" placeholder="0" />
-              <div class="muted">Auto-fills after Calculate.</div>
-            </label>
+            <div class="row2" style="align-items: start">
+              <div>
+                <div class="muted" style="margin-bottom: 4px">Total SCF</div>
+                <input id="totalScf" type="number" placeholder="0" />
+                <!-- <div class="muted"><u>Auto-fills after Calculate.</u></div> -->
+                <button id="splitUpdate" type="button" class="btn btn-primary" style="margin-top: 8px">Update</button>
+              </div>
+              <div>
+                <div class="muted" style="margin-bottom: 4px; visibility: hidden">-</div>
+                <select id="splitGas">
+                  <option value="LIN" selected>LIN (Nitrogen)</option>
+                  <option value="LOX">LOX (Oxygen)</option>
+                  <option value="LAR">LAR (Argon)</option>
+                </select>
+                <div class="muted">Gas (for SCF >< Gallons)</div>
+              </div>
+            </div>
 
             <!-- Tank 1 -->
-            <div class="box">
-              <b>Tank 1</b>
-              <div class="row2" style="align-items: center; margin-bottom: 6px">
-                <label>
-                  Units
-                  <select id="t1unit">
-                    <option value="in" selected>Full Trycock (in)</option>
-                    <option value="gal">Gallons (gal)</option>
-                  </select>
-                </label>
-                <label>
-                  Tank Capacity (gal)
+            <div class="tank-section">
+              <b class="tank-header">Tank 1</b>
+              <div class="row2">
+                <div>
                   <input id="t1Cap" type="number" placeholder="0" />
-                </label>
+                  <div class="muted">Full Trycock (in)</div>
+                </div>
+                <div>
+                  <input id="t1CapGal" type="number" placeholder="0" />
+                  <div class="muted">Tank Capacity (gal)</div>
+                </div>
               </div>
 
-              <div class="row2" style="align-items: end">
+              <div class="row2">
                 <div>
                   <input id="t1s" type="number" placeholder="0" />
-                  <div class="muted">Start</div>
+                  <div class="muted">Start (in)</div>
                 </div>
                 <div>
                   <input id="t1e" type="number" placeholder="0" />
-                  <div class="muted">End</div>
+                  <div class="muted">End (in)</div>
                 </div>
               </div>
-              <label>
-                Total Allocated SCF
+              <div>
+                <div class="muted" style="margin-bottom: 4px">Total Allocated SCF</div>
                 <input id="t1alloc" type="text" placeholder="0" readonly />
-              </label>
+              </div>
             </div>
 
             <!-- Tank 2 -->
-            <div class="box">
-              <b>Tank 2</b>
-              <div class="row2" style="align-items: center; margin-bottom: 6px">
-                <label>
-                  Units
-                  <select id="t2unit">
-                    <option value="in" selected>Full Trycock (in)</option>
-                    <option value="gal">Gallons (gal)</option>
-                  </select>
-                </label>
-                <label>
-                  Tank Capacity (gal)
+            <div class="tank-section">
+              <b class="tank-header">Tank 2</b>
+              <div class="row2">
+                <div>
                   <input id="t2Cap" type="number" placeholder="0" />
-                </label>
+                  <div class="muted">Full Trycock (in)</div>
+                </div>
+                <div>
+                  <input id="t2CapGal" type="number" placeholder="0" />
+                  <div class="muted">Tank Capacity (gal)</div>
+                </div>
               </div>
 
-              <div class="row2" style="align-items: end">
+              <div class="row2">
                 <div>
                   <input id="t2s" type="number" placeholder="0" />
-                  <div class="muted">Start</div>
+                  <div class="muted">Start (in)</div>
                 </div>
                 <div>
                   <input id="t2e" type="number" placeholder="0" />
-                  <div class="muted">End</div>
+                  <div class="muted">End (in)</div>
                 </div>
               </div>
-              <label>
-                Total Allocated SCF
+              <div>
+                <div class="muted" style="margin-bottom: 4px">Total Allocated SCF</div>
                 <input id="t2alloc" type="text" placeholder="0" readonly />
-              </label>
+              </div>
             </div>
 
             <div id="err" class="err">
@@ -738,8 +785,8 @@
 
             <div class="sticky-actions">
               <button id="calcSplit" class="btn btn-primary">Calculate</button>
-              <button id="clearSplit" class="btn-clear" type="button" style="margin-top: 0; width: 100%">Clear</button>
-              <button type="button" class="btn btn-primary" onclick="window.goToReserve()">→ Reserve</button>
+              <button id="clearSplit" class="btn-clear" type="button">Clear</button>
+              <button type="button" class="btn btn-primary" onclick="window.goToReserve()">> Reserve</button>
             </div>
           </div>
         </section>
@@ -750,61 +797,65 @@
           <div class="page split">
             <h1>Cryo Reserve Calculator</h1>
 
-            <label>
-              Total Pounds to SCF
+            <div>
+              <div class="muted" style="margin-bottom: 4px">Total Pounds /Gallons to SCF</div>
               <div style="display: flex; gap: 10px; align-items: center">
                 <input id="resGallons" type="number" placeholder="0" maxlength="6" max="999999" inputmode="numeric" />
                 <button id="resUpdate" type="button" class="btn btn-primary">Update</button>
               </div>
-              <div class="muted">Pounds on COA translated to SCF (uses gas below, max 6 digits). SCF is capped at 999,999 for the truck counter.</div>
+              <div class="muted">Pounds on COA translated to SCF (uses gas below, max 6 digits). SCF is capped at 999,999</div>
               <div id="resHint" class="muted" style="margin-top: 6px"></div>
-            </label>
+            </div>
 
-            <label>
-              Gas for Conversion
+            <div style="margin-top: 12px">
               <select id="resGas">
-                <option value="LIN">LIN (Nitrogen)</option>
+                <option value="LIN" selected>LIN (Nitrogen)</option>
                 <option value="LOX">LOX (Oxygen)</option>
                 <option value="LAR">LAR (Argon)</option>
               </select>
-            </label>
-
-            <div class="row2">
-              <label>
-                Truck Full Inches (fallback)
-                <input id="resTruckFullIn" type="number" placeholder="e.g., 120" />
-                <div class="muted">Linear inches fallback for the truck tank counter.</div>
-              </label>
-              <label>
-                Truck Remaining Inches
-                <input id="resTruckRemainIn" type="text" placeholder="0" readonly />
-                <div class="muted">Updates as SCF is allocated to tanks.</div>
-              </label>
             </div>
 
-            <label>
-              Tank 1 SCF
+            <div class="row2">
+              <div>
+                <div class="muted" style="margin-bottom: 4px">Truck Full Inches (fallback)</div>
+                <input id="resTruckFullIn" type="number" placeholder="e.g. 120" />
+                <div class="muted">Linear In fallback for truck tank counter</div>
+              </div>
+              <div>
+                <div class="muted" style="margin-bottom: 4px">Truck Remaining Inches</div>
+                <input id="resTruckRemainIn" type="text" placeholder="0" readonly />
+                <div class="muted">Updates as SCF allocated to tanks</div>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px">
+              <div class="muted" style="margin-bottom: 4px"><b>Tank 1 SCF</b></div>
               <input id="resT1" type="number" placeholder="0" />
-            </label>
+            </div>
 
-            <label>
-              Tank 2 SCF
+            <div style="margin-top: 12px">
+              <div class="muted" style="margin-bottom: 4px"><b>Tank 2 SCF</b></div>
               <input id="resT2" type="number" placeholder="0" />
-            </label>
+            </div>
 
-            <label>
-              Tank 3 SCF
+            <div style="margin-top: 12px">
+              <div class="muted" style="margin-bottom: 4px"><b>Tank 3 SCF</b></div>
               <input id="resT3" type="number" placeholder="0" />
-            </label>
+            </div>
 
-            <label>
-              Remaining SCF
+            <div style="margin-top: 12px">
+              <div class="muted" style="margin-bottom: 4px"><b>Tank 4 SCF</b></div>
+              <input id="resT4" type="number" placeholder="0" />
+            </div>
+
+            <div style="margin-top: 16px">
+              <div class="muted" style="margin-bottom: 4px"><b>Remaining SCF</b></div>
               <input id="resRemaining" type="text" placeholder="0" readonly />
-            </label>
+            </div>
 
             <div class="sticky-actions">
+              <button id="resClear" class="btn btn-primary" type="button">Clear</button>
               <button class="btn-ghost" type="button" onclick="window.goToCalc()">← Home</button>
-              <button id="resClear" class="btn-clear" type="button" style="width: 100%">Clear</button>
             </div>
           </div>
         </section>
