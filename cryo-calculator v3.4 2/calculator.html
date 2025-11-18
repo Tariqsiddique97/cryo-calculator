@@ -979,35 +979,68 @@
           <canvas id="hmCanvas"></canvas>
         </div>
 
-        <!-- Drawing mode buttons -->
-        <div class="hm-row" style="gap: 16px; justify-content: center; margin-top: 8px">
-          <button id="hmModeRuler" type="button" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #22c55e; background: #dcfce7; color: #166534; font-weight: 600; font-size: 11px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px">
-            <span style="font-size: 20px">📏</span>
-            <span>Ruler</span>
-          </button>
-          <button id="hmModeMeasure" type="button" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #ef4444; background: #fee2e2; color: #991b1b; font-weight: 600; font-size: 11px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px">
-            <span style="font-size: 20px">📐</span>
-            <span>Full Measure</span>
-          </button>
-        </div>
-        <div class="hm-muted" style="margin-top: 4px; text-align: center">Scroll to zoom, right-click drag to pan. Select Ruler or Full Measure to draw</div>
-
-        <!-- Reference input + Camera controls -->
-        <div class="hm-row">
-          <label class="hm-muted">Known length (in)</label>
+        <!-- Controls row: Known length, Capture, Retake, Ruler, Full Measure -->
+        <div class="hm-row" style="gap: 8px; justify-content: space-around; align-items: center; margin-top: 8px; flex-wrap: wrap">
+          <span class="hm-muted" style="font-size: 11px">Known length (in)</span>
           <input
             id="hmRefIn"
             type="number"
             inputmode="decimal"
-            placeholder="e.g. 6 or 12"
-            style="width: 100px; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; background: Field; color: FieldText"
+            placeholder="12"
+            min="1"
+            style="width: 60px; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; background: Field; color: FieldText; text-align: center"
           />
-          <button id="hmCapture" class="btn" type="button">📷 Capture</button>
-          <button id="hmRetake" class="btn-ghost" type="button">Retake</button>
-          <span id="hmNote" class="hm-muted">
-            Capture image, draw lines with Ruler and Full Measure buttons, then Apply.
-          </span>
+          <button id="hmCapture" class="btn" type="button" style="padding: 8px 12px; font-size: 13px">📷 Capture</button>
+          <button id="hmRetake" class="btn-ghost" type="button" style="padding: 8px 12px; font-size: 13px">Retake</button>
+          <span style="width: 16px"></span>
+          <button
+            id="hmModeRuler"
+            type="button"
+            style="
+              width: 52px;
+              height: 52px;
+              border-radius: 50%;
+              border: 3px solid #22c55e;
+              background: #dcfce7;
+              color: #166534;
+              font-weight: 600;
+              font-size: 9px;
+              cursor: pointer;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              gap: 1px;
+            "
+          >
+            <span>Ruler</span>
+          </button>
+          <button
+            id="hmModeMeasure"
+            type="button"
+            style="
+              width: 52px;
+              height: 52px;
+              border-radius: 50%;
+              border: 3px solid #ef4444;
+              background: #fee2e2;
+              color: #991b1b;
+              font-weight: 600;
+              font-size: 9px;
+              cursor: pointer;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              gap: 1px;
+            "
+          >
+            <span>Full Measure</span>
+          </button>
         </div>
+        <span id="hmNote" class="hm-muted">
+          Scroll to zoom, right-click drag to pan. Capture image, draw lines with Ruler and Measure buttons, then Apply.
+        </span>
 
         <!-- Measurement Result Fields -->
         <div class="hm-row" style="margin-top: 12px">
@@ -1592,7 +1625,6 @@
           { passive: true }
         );
 
-
         function linePixels() {
           if (!line) return 0;
           return Math.hypot(line.x2 - line.x1, line.y2 - line.y1);
@@ -1884,7 +1916,9 @@
 
         // Track if page just loaded to prevent auto-opening modal on browser form restoration
         let pageJustLoaded = true;
-        setTimeout(() => { pageJustLoaded = false; }, 100);
+        setTimeout(() => {
+          pageJustLoaded = false;
+        }, 100);
 
         document.getElementById("tankType")?.addEventListener("change", (e) => {
           // Only auto-open modal if this is a real user interaction, not initial page load
