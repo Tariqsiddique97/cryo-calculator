@@ -979,22 +979,20 @@
           <canvas id="hmCanvas"></canvas>
         </div>
 
-        <!-- Zoom Controls -->
-        <div class="hm-row" style="justify-content: space-between; margin-top: 8px">
-          <div style="display: flex; gap: 6px; align-items: center">
-            <button id="hmZoomOut" class="btn-ghost" type="button" style="padding: 6px 12px">−</button>
-            <span id="hmZoomLevel" class="hm-muted" style="min-width: 50px; text-align: center; font-weight: 600">100%</span>
-            <button id="hmZoomIn" class="btn-ghost" type="button" style="padding: 6px 12px">+</button>
-            <button id="hmZoomReset" class="btn-ghost" type="button" style="padding: 6px 10px; font-size: 11px">Reset</button>
-          </div>
-          <div style="display: flex; gap: 6px; align-items: center">
-            <button id="hmModePan" class="btn-ghost" type="button" style="padding: 6px 12px">🖐️ Pan</button>
-            <button id="hmModeDraw" class="btn" type="button" style="padding: 6px 12px">✏️ Draw</button>
-          </div>
+        <!-- Drawing mode buttons -->
+        <div class="hm-row" style="gap: 16px; justify-content: center; margin-top: 8px">
+          <button id="hmModeRuler" type="button" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #22c55e; background: #dcfce7; color: #166534; font-weight: 600; font-size: 11px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px">
+            <span style="font-size: 20px">📏</span>
+            <span>Ruler</span>
+          </button>
+          <button id="hmModeMeasure" type="button" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #ef4444; background: #fee2e2; color: #991b1b; font-weight: 600; font-size: 11px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px">
+            <span style="font-size: 20px">📐</span>
+            <span>Full Measure</span>
+          </button>
         </div>
-        <div class="hm-muted" style="margin-top: 4px; text-align: center">When zoomed: Use Pan to move image, then Draw to mark lines</div>
+        <div class="hm-muted" style="margin-top: 4px; text-align: center">Scroll to zoom, right-click drag to pan. Select Ruler or Full Measure to draw</div>
 
-        <!-- Reference + Set -->
+        <!-- Reference input + Camera controls -->
         <div class="hm-row">
           <label class="hm-muted">Known length (in)</label>
           <input
@@ -1002,14 +1000,12 @@
             type="number"
             inputmode="decimal"
             placeholder="e.g. 6 or 12"
-            style="width: 140px; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; background: Field; color: FieldText"
+            style="width: 100px; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; background: Field; color: FieldText"
           />
-          <button id="hmSet" class="btn" type="button">Set</button>
+          <button id="hmCapture" class="btn" type="button">📷 Capture</button>
           <button id="hmRetake" class="btn-ghost" type="button">Retake</button>
           <span id="hmNote" class="hm-muted">
-            Enter inches, draw the line, then press
-            <b>Set</b>
-            .
+            Capture image, draw lines with Ruler and Full Measure buttons, then Apply.
           </span>
         </div>
 
@@ -1098,16 +1094,12 @@
         const tabL = document.getElementById("hmTabL");
         const note = document.getElementById("hmNote");
         const refIn = document.getElementById("hmRefIn");
-        const btnSet = document.getElementById("hmSet");
         const btnClose = document.getElementById("hmClose");
+        const btnCapture = document.getElementById("hmCapture");
         const btnRetake = document.getElementById("hmRetake");
         const btnApply = document.getElementById("hmApply");
-        const btnZoomIn = document.getElementById("hmZoomIn");
-        const btnZoomOut = document.getElementById("hmZoomOut");
-        const btnZoomReset = document.getElementById("hmZoomReset");
-        const zoomLevel = document.getElementById("hmZoomLevel");
-        const btnModePan = document.getElementById("hmModePan");
-        const btnModeDraw = document.getElementById("hmModeDraw");
+        const btnModeRuler = document.getElementById("hmModeRuler");
+        const btnModeMeasure = document.getElementById("hmModeMeasure");
         const calculatedDiameter = document.getElementById("hmCalculatedDiameter");
         const calculatedLength = document.getElementById("hmCalculatedLength");
 
@@ -1123,17 +1115,17 @@
         const vL = document.getElementById("hmValL");
 
         // State
-        let mode = "D"; // 'D' or 'L'
+        let mode = "D"; // 'D' or 'L' - which dimension to measure
         let stream = null;
         let still = null; // Image of last captured frame
-        let refStill = null; // Reference image for 2-line workflow
-        let line = null; // {x1,y1,x2,y2} in IMAGE coordinates
-        let refLine = null; // Reference line for calibration (in IMAGE coordinates)
+        let rulerLine = null; // Calibration line (in IMAGE coordinates)
+        let measurementLine = null; // Actual measurement line (in IMAGE coordinates)
+        let line = null; // Current line being drawn
         let drawing = false;
         let pxPerInch = null;
         let measuredD = null,
           measuredL = null;
-        let step = 1; // 1=reference line, 2=actual measurement
+        let drawMode = "ruler"; // 'ruler' or 'measurement'
 
         // Zoom & Pan state
         let scale = 1.0; // Zoom level
@@ -1143,13 +1135,33 @@
         let panStartX = 0;
         let panStartY = 0;
         let lastTouchDistance = 0;
-        let interactionMode = "draw"; // 'pan' or 'draw'
 
         // Image dimensions after drawContain
         let imgDrawWidth = 0;
         let imgDrawHeight = 0;
         let imgDrawX = 0;
         let imgDrawY = 0;
+
+        // Animation loop for live video
+        let animationId = null;
+
+        function startVideoLoop() {
+          if (animationId) return; // Already running
+          function loop() {
+            if (!still && stream && video.videoWidth) {
+              draw();
+            }
+            animationId = requestAnimationFrame(loop);
+          }
+          animationId = requestAnimationFrame(loop);
+        }
+
+        function stopVideoLoop() {
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+          }
+        }
 
         // Camera
         async function openCam() {
@@ -1158,6 +1170,7 @@
             video.srcObject = stream;
             await video.play();
             fitAndDraw();
+            startVideoLoop();
           } catch (e) {
             alert("Camera error: " + e.message);
           }
@@ -1190,10 +1203,9 @@
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.clearRect(0, 0, w, h);
 
-          // Draw the appropriate still image or live video
-          const imgToShow = step === 2 && refStill ? refStill : still;
-
-          if (imgToShow && imgToShow.complete) {
+          // Draw the still image or live video
+          if (still && still.complete) {
+            const imgToShow = still;
             // Hide video when showing still image
             if (video) video.style.opacity = "0";
 
@@ -1239,21 +1251,32 @@
             ctx.translate(offsetX / scale, offsetY / scale);
             ctx.translate(-imgW / 2, -imgH / 2);
 
-            // Draw reference line (green) if on step 2
-            if (step === 2 && refLine) {
+            // Draw ruler line (green) if exists
+            if (rulerLine) {
               ctx.lineWidth = 2 / scale;
-              ctx.strokeStyle = "#22c55e"; // Green for reference line
+              ctx.strokeStyle = "#22c55e"; // Green for ruler calibration
               ctx.lineCap = "round";
               ctx.beginPath();
-              ctx.moveTo(refLine.x1, refLine.y1);
-              ctx.lineTo(refLine.x2, refLine.y2);
+              ctx.moveTo(rulerLine.x1, rulerLine.y1);
+              ctx.lineTo(rulerLine.x2, rulerLine.y2);
               ctx.stroke();
             }
 
-            // Draw current line (green for Step 1, red for Step 2)
+            // Draw measurement line (red) if exists
+            if (measurementLine) {
+              ctx.lineWidth = 2 / scale;
+              ctx.strokeStyle = "#ef4444"; // Red for measurement
+              ctx.lineCap = "round";
+              ctx.beginPath();
+              ctx.moveTo(measurementLine.x1, measurementLine.y1);
+              ctx.lineTo(measurementLine.x2, measurementLine.y2);
+              ctx.stroke();
+            }
+
+            // Draw current line being drawn
             if (line) {
               ctx.lineWidth = 2 / scale;
-              ctx.strokeStyle = step === 1 ? "#22c55e" : "#ef4444"; // Green for ruler, Red for tank
+              ctx.strokeStyle = drawMode === "ruler" ? "#22c55e" : "#ef4444"; // Green for ruler, Red for measurement
               ctx.lineCap = "round";
               ctx.beginPath();
               ctx.moveTo(line.x1, line.y1);
@@ -1263,9 +1286,13 @@
 
             ctx.restore();
           } else if (video && video.videoWidth) {
-            // Show video when no still image
+            // Show video when no still image (flipped to correct mirror effect)
             if (video) video.style.opacity = "1";
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.translate(-w, 0);
             ctx.drawImage(video, 0, 0, w, h);
+            ctx.restore();
           } else {
             ctx.fillStyle = "#000";
             ctx.fillRect(0, 0, w, h);
@@ -1296,16 +1323,19 @@
           const tmp = document.createElement("canvas");
           tmp.width = video.videoWidth;
           tmp.height = video.videoHeight;
-          tmp.getContext("2d").drawImage(video, 0, 0);
+          // Flip horizontally to correct mirror effect
+          const tmpCtx = tmp.getContext("2d");
+          tmpCtx.scale(-1, 1);
+          tmpCtx.translate(-tmp.width, 0);
+          tmpCtx.drawImage(video, 0, 0);
           const img = new Image();
           img.onload = () => {
+            still = img;
             resetZoom();
             fitAndDraw();
+            updateUI();
           };
           img.src = tmp.toDataURL("image/png");
-          if (step === 1) {
-            still = img;
-          }
           return true;
         }
 
@@ -1355,10 +1385,7 @@
         }
 
         function updateZoomDisplay() {
-          if (zoomLevel) {
-            const pct = Math.round(scale * 100);
-            zoomLevel.textContent = `${pct}%`;
-          }
+          // Zoom level display removed - function kept for compatibility
         }
 
         // Convert screen coordinates to image coordinates
@@ -1396,16 +1423,23 @@
           return screenToImage(t.clientX, t.clientY);
         }
 
-        // Mouse events
+        // Prevent context menu on canvas for right-click pan
+        canvas.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+        });
+
+        // Mouse events - left click to draw, right click to pan
         canvas.addEventListener("mousedown", (e) => {
-          if (interactionMode === "pan") {
-            // Pan mode
+          if (e.button === 2) {
+            // Right click - pan
+            e.preventDefault();
             isPanning = true;
             panStartX = e.clientX - offsetX;
             panStartY = e.clientY - offsetY;
             canvas.style.cursor = "grabbing";
-          } else {
-            // Draw mode
+          } else if (e.button === 0) {
+            // Left click - draw (only when image is captured)
+            if (!still) return;
             drawing = true;
             const p = getPointerPos(e);
             line = { x1: p.x, y1: p.y, x2: p.x, y2: p.y };
@@ -1428,22 +1462,24 @@
         });
 
         window.addEventListener("mouseup", () => {
+          if (drawing && line) {
+            // Save the completed line based on current draw mode
+            if (drawMode === "ruler") {
+              rulerLine = { ...line };
+            } else {
+              measurementLine = { ...line };
+            }
+            autoCalculate();
+            draw();
+          }
           drawing = false;
           isPanning = false;
-          if (interactionMode === "pan") {
-            canvas.style.cursor = "grab";
-          } else {
-            canvas.style.cursor = "crosshair";
-          }
+          canvas.style.cursor = still ? "crosshair" : "default";
         });
 
-        // Update cursor based on mode
+        // Update cursor for drawing
         canvas.addEventListener("mouseenter", () => {
-          if (interactionMode === "pan") {
-            canvas.style.cursor = "grab";
-          } else {
-            canvas.style.cursor = "crosshair";
-          }
+          canvas.style.cursor = "crosshair";
         });
 
         // Mouse wheel for zoom
@@ -1457,30 +1493,20 @@
           { passive: false }
         );
 
-        // Touch events for drawing, panning, and pinch-zoom
+        // Touch events for drawing and pinch-zoom
         let touchMode = null; // 'draw', 'pan', or 'pinch'
 
         canvas.addEventListener(
           "touchstart",
           (e) => {
             if (e.touches.length === 1) {
-              // Single touch - respect interaction mode
-              const touch = e.touches[0];
-
-              if (interactionMode === "pan") {
-                // Pan mode
-                touchMode = "pan";
-                isPanning = true;
-                panStartX = touch.clientX - offsetX;
-                panStartY = touch.clientY - offsetY;
-              } else {
-                // Draw mode
-                touchMode = "draw";
-                drawing = true;
-                const p = getPointerPos(e);
-                line = { x1: p.x, y1: p.y, x2: p.x, y2: p.y };
-                draw();
-              }
+              // Single touch - only draw when image is captured
+              if (!still) return; // Don't draw on live video
+              touchMode = "draw";
+              drawing = true;
+              const p = getPointerPos(e);
+              line = { x1: p.x, y1: p.y, x2: p.x, y2: p.y };
+              draw();
             } else if (e.touches.length === 2) {
               // Two fingers - pinch zoom
               touchMode = "pinch";
@@ -1541,6 +1567,16 @@
           "touchend",
           (e) => {
             if (e.touches.length === 0) {
+              if (drawing && line && touchMode === "draw") {
+                // Save the completed line based on current draw mode
+                if (drawMode === "ruler") {
+                  rulerLine = { ...line };
+                } else {
+                  measurementLine = { ...line };
+                }
+                autoCalculate();
+                draw();
+              }
               drawing = false;
               isPanning = false;
               touchMode = null;
@@ -1556,59 +1592,6 @@
           { passive: true }
         );
 
-        // Zoom button controls
-        if (btnZoomIn) {
-          btnZoomIn.addEventListener("click", () => {
-            zoom(1.2, canvas.width / 2, canvas.height / 2);
-          });
-        }
-
-        if (btnZoomOut) {
-          btnZoomOut.addEventListener("click", () => {
-            zoom(0.8, canvas.width / 2, canvas.height / 2);
-          });
-        }
-
-        if (btnZoomReset) {
-          btnZoomReset.addEventListener("click", () => {
-            resetZoom();
-            draw();
-          });
-        }
-
-        // Mode toggle handlers
-        function setInteractionMode(newMode) {
-          interactionMode = newMode;
-
-          // Update button styles
-          if (btnModePan && btnModeDraw) {
-            if (newMode === "pan") {
-              btnModePan.classList.remove("btn-ghost");
-              btnModePan.classList.add("btn");
-              btnModeDraw.classList.remove("btn");
-              btnModeDraw.classList.add("btn-ghost");
-              canvas.style.cursor = "grab";
-            } else {
-              btnModePan.classList.remove("btn");
-              btnModePan.classList.add("btn-ghost");
-              btnModeDraw.classList.remove("btn-ghost");
-              btnModeDraw.classList.add("btn");
-              canvas.style.cursor = "crosshair";
-            }
-          }
-        }
-
-        if (btnModePan) {
-          btnModePan.addEventListener("click", () => {
-            setInteractionMode("pan");
-          });
-        }
-
-        if (btnModeDraw) {
-          btnModeDraw.addEventListener("click", () => {
-            setInteractionMode("draw");
-          });
-        }
 
         function linePixels() {
           if (!line) return 0;
@@ -1671,135 +1654,141 @@
           }
         }
 
-        // Update UI for current step
+        // Update UI for current draw mode
         function updateUI() {
-          if (step === 1) {
-            refIn.value = "12";
-            refIn.disabled = false;
-            note.textContent = "Step 1: Zoom in on ruler, draw a line over 12 inches, press Set.";
+          // Update button styles based on current draw mode
+          if (drawMode === "ruler") {
+            btnModeRuler.style.boxShadow = "0 0 0 4px rgba(34, 197, 94, 0.5)";
+            btnModeMeasure.style.boxShadow = "none";
           } else {
-            refIn.disabled = true;
-            note.textContent = `Step 2: Zoom out, draw a line for full ${mode === "D" ? "diameter" : "length"}, press Set.`;
+            btnModeRuler.style.boxShadow = "none";
+            btnModeMeasure.style.boxShadow = "0 0 0 4px rgba(239, 68, 68, 0.5)";
+          }
+
+          if (!still) {
+            // No image captured yet - show live video
+            note.textContent = "Position camera, then press Capture.";
+          } else if (drawMode === "ruler") {
+            note.textContent = "Draw green line over ruler, enter known inches.";
+          } else {
+            note.textContent = `Draw red line for full ${mode === "D" ? "diameter" : "length"}.`;
           }
         }
 
-        // Mode switch
+        // Update calculations automatically
+        function autoCalculate() {
+          // Calculate pxPerInch from ruler line
+          if (rulerLine) {
+            const rulerPx = Math.hypot(rulerLine.x2 - rulerLine.x1, rulerLine.y2 - rulerLine.y1);
+            const ref = parseFloat(refIn.value);
+            if (isFinite(ref) && ref > 0 && rulerPx > 10) {
+              pxPerInch = rulerPx / ref;
+            }
+          }
+
+          // Calculate measurement from measurement line
+          if (measurementLine && pxPerInch) {
+            const measurePx = Math.hypot(measurementLine.x2 - measurementLine.x1, measurementLine.y2 - measurementLine.y1);
+            const inches = measurePx / pxPerInch;
+
+            if (mode === "D") {
+              measuredD = inches;
+              if (calculatedDiameter) calculatedDiameter.value = inches.toFixed(0);
+              // Update thumbnail
+              paintThumb(cThumbD, still, measurementLine, `≈ ${inches.toFixed(0)} in`, "#ef4444", rulerLine);
+              if (vD) vD.textContent = `${inches.toFixed(0)} in`;
+            } else {
+              measuredL = inches;
+              if (calculatedLength) calculatedLength.value = inches.toFixed(0);
+              // Update thumbnail
+              paintThumb(cThumbL, still, measurementLine, `≈ ${inches.toFixed(0)} in`, "#ef4444", rulerLine);
+              if (vL) vL.textContent = `${inches.toFixed(0)} in`;
+            }
+          }
+        }
+
+        // Mode switch (Diameter/Length tabs)
         function setMode(m) {
           mode = m;
           tabD.classList.toggle("active", m === "D");
           tabL.classList.toggle("active", m === "L");
+          // Reset measurement line when switching dimension, keep ruler calibration
+          measurementLine = null;
           line = null;
-          pxPerInch = null;
-          step = 1;
-          refLine = null;
-          refStill = null;
-          resetZoom();
-          captureStill();
+          // Don't auto-capture - keep current still or live video
           updateUI();
           draw();
         }
         tabD.addEventListener("click", () => setMode("D"));
         tabL.addEventListener("click", () => setMode("L"));
 
-        // Retake
-        btnRetake.addEventListener("click", () => {
-          if (step === 2) {
-            // Go back to step 1
-            step = 1;
-            line = null;
-            refLine = null;
-            refStill = null;
-            pxPerInch = null;
+        // Capture button - freeze the camera feed
+        btnCapture.addEventListener("click", () => {
+          if (captureStill()) {
+            draw();
             updateUI();
           }
+        });
+
+        // Retake - go back to live video
+        btnRetake.addEventListener("click", () => {
+          // Clear all lines and measurements
+          rulerLine = null;
+          measurementLine = null;
+          line = null;
+          pxPerInch = null;
+          drawMode = "ruler";
+
           // Clear the appropriate input field based on mode
           if (mode === "D") {
             if (calculatedDiameter) calculatedDiameter.value = "";
+            measuredD = null;
           } else {
             if (calculatedLength) calculatedLength.value = "";
+            measuredL = null;
           }
           resetZoom();
-          captureStill();
-          line = null;
+          still = null; // Clear still to show live video
+          draw();
+          updateUI();
+        });
+
+        // Ruler button - switch to ruler drawing mode
+        btnModeRuler.addEventListener("click", () => {
+          drawMode = "ruler";
+          line = null; // Clear current line
+          updateUI();
           draw();
         });
 
-        // Set (2-step workflow)
-        btnSet.addEventListener("click", () => {
-          if (!still && !captureStill()) {
-            alert("Camera not ready");
+        // Full Measurement button - switch to measurement drawing mode
+        btnModeMeasure.addEventListener("click", () => {
+          if (!rulerLine) {
+            alert("Please draw the ruler calibration line first.");
             return;
           }
-          if (!line) {
-            alert("Draw a line first.");
-            return;
-          }
-
-          const px = linePixels();
-          if (px < 10) {
-            alert("Line is too short. Please draw a longer line.");
-            return;
-          }
-
-          if (step === 1) {
-            // Step 1: Calibrate with 12-inch reference
+          if (!pxPerInch) {
             const ref = parseFloat(refIn.value);
             if (!isFinite(ref) || ref <= 0) {
-              alert("Enter a valid reference length (e.g., 12 inches).");
+              alert("Please enter a valid reference length (e.g., 6 or 12 inches).");
               return;
             }
-
-            pxPerInch = px / ref;
-            refLine = { ...line }; // Save reference line (already in image coords)
-            refStill = still; // Save reference image
-
-            // Don't show thumbnail yet - wait for Step 2
-
-            step = 2;
-            line = null;
-            updateUI();
-            draw();
-          } else {
-            // Step 2: Measure actual dimension
-            if (!pxPerInch) {
-              alert("Calibration lost. Please start over.");
-              step = 1;
-              updateUI();
-              return;
-            }
-
-            const inches = px / pxPerInch;
-
-            if (mode === "D") {
-              measuredD = inches;
-              // Show thumbnail with BOTH lines: green reference + red measurement
-              paintThumb(cThumbD, refStill, line, `≈ ${inches.toFixed(0)} in`, "#ef4444", refLine);
-              if (vD) vD.textContent = `${inches.toFixed(0)} in`;
-              // Populate diameter input field
-              if (calculatedDiameter) calculatedDiameter.value = inches.toFixed(0);
-            } else {
-              measuredL = inches;
-              // Show thumbnail with BOTH lines: green reference + red measurement
-              paintThumb(cThumbL, refStill, line, `≈ ${inches.toFixed(0)} in`, "#ef4444", refLine);
-              if (vL) vL.textContent = `${inches.toFixed(0)} in`;
-              // Populate length input field
-              if (calculatedLength) calculatedLength.value = inches.toFixed(0);
-            }
-
-            // Reset for next measurement
-            step = 1;
-            line = null;
-            refLine = null;
-            refStill = null;
-            pxPerInch = null;
-            resetZoom();
-            captureStill();
-            note.textContent = "Measurement complete! Press Apply to use these values, or switch tabs to measure the other dimension.";
-            updateUI();
+            // Calculate pxPerInch now
+            const rulerPx = Math.hypot(rulerLine.x2 - rulerLine.x1, rulerLine.y2 - rulerLine.y1);
+            pxPerInch = rulerPx / ref;
           }
+          drawMode = "measurement";
+          line = null; // Clear current line
+          updateUI();
+          draw();
         });
 
-        // Apply button - transfer values to main calculator page
+        // Auto-calculate when reference inches changes
+        refIn.addEventListener("input", () => {
+          autoCalculate();
+        });
+
+        // Apply button - transfer values to main calculator page and close modal
         btnApply.addEventListener("click", () => {
           const diameterValue = parseFloat(calculatedDiameter.value);
           const lengthValue = parseFloat(calculatedLength.value);
@@ -1824,11 +1813,11 @@
             // Reset all modal state
             measuredD = measuredL = null;
             line = null;
-            refLine = null;
-            refStill = null;
+            rulerLine = null;
+            measurementLine = null;
             still = null;
             pxPerInch = null;
-            step = 1;
+            drawMode = "ruler";
 
             // Clear input fields
             if (calculatedDiameter) calculatedDiameter.value = "";
@@ -1849,7 +1838,7 @@
             // Close the modal
             closeModal();
           } else {
-            alert("Please complete at least one measurement first by drawing lines and pressing Set.");
+            alert("Please complete at least one measurement by drawing ruler and measurement lines.");
           }
         });
 
@@ -1858,26 +1847,27 @@
           modal.classList.add("open");
           measuredD = measuredL = null;
           line = null;
-          refLine = null;
-          refStill = null;
+          rulerLine = null;
+          measurementLine = null;
+          still = null;
           pxPerInch = null;
-          step = 1;
+          drawMode = "ruler";
           vD.textContent = "";
           vL.textContent = "";
           // Clear all input fields
           if (calculatedDiameter) calculatedDiameter.value = "";
           if (calculatedLength) calculatedLength.value = "";
+          // Set default reference value
+          refIn.value = "12";
           resetZoom();
           updateUI();
           openCam().then(() => {
-            setTimeout(() => {
-              captureStill();
-              fitAndDraw();
-            }, 200);
+            fitAndDraw();
           });
         }
         function closeModal() {
           modal.classList.remove("open");
+          stopVideoLoop();
           closeCam();
           resetZoom();
         }
