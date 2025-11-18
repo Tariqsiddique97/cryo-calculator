@@ -1,66 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Cryo Tank Calculator</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cryo Tank Calculator</title>
 
-  <!-- PWA -->
-<link rel="manifest" href="/manifest.webmanifest">
-<meta name="theme-color" content="#0066cc">
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0066cc" />
 
-<!-- iOS home-screen icon (Safari ignores manifest icons) -->
-<link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" sizes="180x180">
+    <!-- iOS home-screen icon (Safari ignores manifest icons) -->
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" sizes="180x180" />
 
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
-<!-- (Optional) favicon for desktop browsers -->
-<link rel="icon" href="/icons/icon-192.png" sizes="192x192">
+    <!-- (Optional) favicon for desktop browsers -->
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
 
-  <style>
-    /* Splash */
-    html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:linear-gradient(180deg,#003366,#0066cc);color:#fff;overflow:hidden}
-    #splash{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;z-index:1000;animation:fadeOut 1s ease 3s forwards}
-    @keyframes fadeOut{to{opacity:0;visibility:hidden}}
-    h1{font-size:2em;margin-bottom:0.3em}
-    h2{font-size:1.2em;font-weight:500;margin:0.2em 0 0.8em 0;opacity:.95}
-    p{font-size:.9em;opacity:.8;margin:.0 0 1.5em 0}
-    h1,h2,p{max-width:85%}
-    img.icon{width:120px;height:auto;margin:.5em 0 .7em 0;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))}
-    #app{opacity:0;transition:opacity 1s ease}
-    body.splash-done #app{opacity:1}
-    iframe{border:none;width:100%;height:100vh}
-  </style>
+    <style>
+      /* Splash */
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        background: linear-gradient(180deg, #003366, #0066cc);
+        color: #fff;
+        overflow: hidden;
+      }
+      #splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        z-index: 1000;
+        animation: fadeOut 1s ease 3s forwards;
+      }
+      @keyframes fadeOut {
+        to {
+          opacity: 0;
+          visibility: hidden;
+        }
+      }
+      h1 {
+        font-size: 2em;
+        margin-bottom: 0.3em;
+      }
+      h2 {
+        font-size: 1.2em;
+        font-weight: 500;
+        margin: 0.2em 0 0.8em 0;
+        opacity: 0.95;
+      }
+      p {
+        font-size: 0.9em;
+        opacity: 0.8;
+        margin: 0 0 1.5em 0;
+      }
+      h1,
+      h2,
+      p {
+        max-width: 85%;
+      }
+      img.icon {
+        width: 120px;
+        height: auto;
+        margin: 0.5em 0 0.7em 0;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+      }
+      #app {
+        opacity: 0;
+        transition: opacity 1s ease;
+      }
+      body.splash-done #app {
+        opacity: 1;
+      }
+      iframe {
+        border: none;
+        width: 100%;
+        height: 100vh;
+      }
+    </style>
 
-  <script>
-    // Register service worker early
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js');
+    <script>
+      // Register service worker early
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js");
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <!-- Splash -->
+    <div id="splash">
+      <h1>Cryo Tank Calculator</h1>
+      <img src="/icons/icon-192.png" alt="Cryo Calculator Icon" class="icon" />
+      <h2>Offload smarter. Calibrate faster. Work safer.</h2>
+      <p>Precision cryogenic transfer tool for drivers and technicians</p>
+    </div>
+
+    <!-- App -->
+    <div id="app">
+      <iframe src="/calculator.html"></iframe>
+    </div>
+
+    <script>
+      // Hide splash after 3s, reveal app
+      window.addEventListener("load", () => {
+        setTimeout(() => document.body.classList.add("splash-done"), 3000);
       });
-    }
-  </script>
-</head>
-<body>
-  <!-- Splash -->
-  <div id="splash">
-    <h1>Cryo Tank Calculator</h1>
-    <img src="/icons/icon-192.png" alt="Cryo Calculator Icon" class="icon" />
-    <h2>Offload smarter. Calibrate faster. Work safer.</h2>
-    <p>Precision cryogenic transfer tool for drivers and technicians</p>
-  </div>
-
-  <!-- App -->
-  <div id="app">
-    <iframe src="/calculator.html"></iframe>
-  </div>
-
-  <script>
-    // Hide splash after 3s, reveal app
-    window.addEventListener('load', () => {
-      setTimeout(() => document.body.classList.add('splash-done'), 3000);
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>

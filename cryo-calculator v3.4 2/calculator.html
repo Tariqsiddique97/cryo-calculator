@@ -992,9 +992,7 @@
             <button id="hmModeDraw" class="btn" type="button" style="padding: 6px 12px">✏️ Draw</button>
           </div>
         </div>
-        <div class="hm-muted" style="margin-top: 4px; text-align: center">
-          When zoomed: Use Pan to move image, then Draw to mark lines
-        </div>
+        <div class="hm-muted" style="margin-top: 4px; text-align: center">When zoomed: Use Pan to move image, then Draw to mark lines</div>
 
         <!-- Reference + Set -->
         <div class="hm-row">
@@ -1013,6 +1011,37 @@
             <b>Set</b>
             .
           </span>
+        </div>
+
+        <!-- Measurement Result Fields -->
+        <div class="hm-row" style="margin-top: 12px">
+          <div style="display: flex; gap: 12px; align-items: center; flex: 1">
+            <div style="flex: 1">
+              <label class="hm-muted" style="display: block; margin-bottom: 4px">Diameter (in)</label>
+              <input
+                id="hmCalculatedDiameter"
+                type="number"
+                inputmode="decimal"
+                readonly
+                placeholder="e.g. 120"
+                aria-readonly="true"
+                style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; color: #666"
+              />
+            </div>
+            <div style="flex: 1">
+              <label class="hm-muted" style="display: block; margin-bottom: 4px">Length (in)</label>
+              <input
+                id="hmCalculatedLength"
+                type="number"
+                inputmode="decimal"
+                readonly
+                placeholder="e.g. 1500"
+                aria-readonly="true"
+                style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; color: #666"
+              />
+            </div>
+          </div>
+          <button id="hmApply" class="btn" type="button" style="align-self: flex-end; padding: 10px 20px">Apply</button>
         </div>
 
         <!-- Thumbnails with measured result labels -->
@@ -1072,12 +1101,15 @@
         const btnSet = document.getElementById("hmSet");
         const btnClose = document.getElementById("hmClose");
         const btnRetake = document.getElementById("hmRetake");
+        const btnApply = document.getElementById("hmApply");
         const btnZoomIn = document.getElementById("hmZoomIn");
         const btnZoomOut = document.getElementById("hmZoomOut");
         const btnZoomReset = document.getElementById("hmZoomReset");
         const zoomLevel = document.getElementById("hmZoomLevel");
         const btnModePan = document.getElementById("hmModePan");
         const btnModeDraw = document.getElementById("hmModeDraw");
+        const calculatedDiameter = document.getElementById("hmCalculatedDiameter");
+        const calculatedLength = document.getElementById("hmCalculatedLength");
 
         // Live + drawing
         const video = document.getElementById("hmVideo");
@@ -1111,7 +1143,7 @@
         let panStartX = 0;
         let panStartY = 0;
         let lastTouchDistance = 0;
-        let interactionMode = 'draw'; // 'pan' or 'draw'
+        let interactionMode = "draw"; // 'pan' or 'draw'
 
         // Image dimensions after drawContain
         let imgDrawWidth = 0;
@@ -1163,7 +1195,7 @@
 
           if (imgToShow && imgToShow.complete) {
             // Hide video when showing still image
-            if (video) video.style.opacity = '0';
+            if (video) video.style.opacity = "0";
 
             // Fill background with black
             ctx.fillStyle = "#000";
@@ -1207,40 +1239,32 @@
             ctx.translate(offsetX / scale, offsetY / scale);
             ctx.translate(-imgW / 2, -imgH / 2);
 
-            // Draw reference line if on step 2 (in blue)
+            // Draw reference line (green) if on step 2
             if (step === 2 && refLine) {
-              ctx.lineWidth = 3 / scale;
-              ctx.strokeStyle = "#3b82f6";
+              ctx.lineWidth = 2 / scale;
+              ctx.strokeStyle = "#22c55e"; // Green for reference line
               ctx.lineCap = "round";
               ctx.beginPath();
               ctx.moveTo(refLine.x1, refLine.y1);
               ctx.lineTo(refLine.x2, refLine.y2);
               ctx.stroke();
-              ctx.fillStyle = "#16a34a";
-              ctx.beginPath();
-              ctx.arc(refLine.x1, refLine.y1, 6 / scale, 0, Math.PI * 2);
-              ctx.fill();
             }
 
-            // Draw current line (in red)
+            // Draw current line (green for Step 1, red for Step 2)
             if (line) {
-              ctx.lineWidth = 3 / scale;
-              ctx.strokeStyle = "#ef4444";
+              ctx.lineWidth = 2 / scale;
+              ctx.strokeStyle = step === 1 ? "#22c55e" : "#ef4444"; // Green for ruler, Red for tank
               ctx.lineCap = "round";
               ctx.beginPath();
               ctx.moveTo(line.x1, line.y1);
               ctx.lineTo(line.x2, line.y2);
               ctx.stroke();
-              ctx.fillStyle = "#16a34a";
-              ctx.beginPath();
-              ctx.arc(line.x1, line.y1, 6 / scale, 0, Math.PI * 2);
-              ctx.fill();
             }
 
             ctx.restore();
           } else if (video && video.videoWidth) {
             // Show video when no still image
-            if (video) video.style.opacity = '1';
+            if (video) video.style.opacity = "1";
             ctx.drawImage(video, 0, 0, w, h);
           } else {
             ctx.fillStyle = "#000";
@@ -1374,12 +1398,12 @@
 
         // Mouse events
         canvas.addEventListener("mousedown", (e) => {
-          if (interactionMode === 'pan') {
+          if (interactionMode === "pan") {
             // Pan mode
             isPanning = true;
             panStartX = e.clientX - offsetX;
             panStartY = e.clientY - offsetY;
-            canvas.style.cursor = 'grabbing';
+            canvas.style.cursor = "grabbing";
           } else {
             // Draw mode
             drawing = true;
@@ -1406,19 +1430,19 @@
         window.addEventListener("mouseup", () => {
           drawing = false;
           isPanning = false;
-          if (interactionMode === 'pan') {
-            canvas.style.cursor = 'grab';
+          if (interactionMode === "pan") {
+            canvas.style.cursor = "grab";
           } else {
-            canvas.style.cursor = 'crosshair';
+            canvas.style.cursor = "crosshair";
           }
         });
 
         // Update cursor based on mode
         canvas.addEventListener("mouseenter", () => {
-          if (interactionMode === 'pan') {
-            canvas.style.cursor = 'grab';
+          if (interactionMode === "pan") {
+            canvas.style.cursor = "grab";
           } else {
-            canvas.style.cursor = 'crosshair';
+            canvas.style.cursor = "crosshair";
           }
         });
 
@@ -1443,7 +1467,7 @@
               // Single touch - respect interaction mode
               const touch = e.touches[0];
 
-              if (interactionMode === 'pan') {
+              if (interactionMode === "pan") {
                 // Pan mode
                 touchMode = "pan";
                 isPanning = true;
@@ -1558,31 +1582,31 @@
 
           // Update button styles
           if (btnModePan && btnModeDraw) {
-            if (newMode === 'pan') {
-              btnModePan.classList.remove('btn-ghost');
-              btnModePan.classList.add('btn');
-              btnModeDraw.classList.remove('btn');
-              btnModeDraw.classList.add('btn-ghost');
-              canvas.style.cursor = 'grab';
+            if (newMode === "pan") {
+              btnModePan.classList.remove("btn-ghost");
+              btnModePan.classList.add("btn");
+              btnModeDraw.classList.remove("btn");
+              btnModeDraw.classList.add("btn-ghost");
+              canvas.style.cursor = "grab";
             } else {
-              btnModePan.classList.remove('btn');
-              btnModePan.classList.add('btn-ghost');
-              btnModeDraw.classList.remove('btn-ghost');
-              btnModeDraw.classList.add('btn');
-              canvas.style.cursor = 'crosshair';
+              btnModePan.classList.remove("btn");
+              btnModePan.classList.add("btn-ghost");
+              btnModeDraw.classList.remove("btn-ghost");
+              btnModeDraw.classList.add("btn");
+              canvas.style.cursor = "crosshair";
             }
           }
         }
 
         if (btnModePan) {
           btnModePan.addEventListener("click", () => {
-            setInteractionMode('pan');
+            setInteractionMode("pan");
           });
         }
 
         if (btnModeDraw) {
           btnModeDraw.addEventListener("click", () => {
-            setInteractionMode('draw');
+            setInteractionMode("draw");
           });
         }
 
@@ -1592,32 +1616,51 @@
         }
 
         // Thumbs
-        function paintThumb(dstCanvas, img, lineObj, label) {
+        function paintThumb(dstCanvas, img, lineObj, label, lineColor, refLineObj) {
           if (!dstCanvas || !img) return;
           const w = (dstCanvas.width = Math.min(640, dstCanvas.parentElement.clientWidth));
           const h = (dstCanvas.height = Math.round((w * 3) / 4));
           const tctx = dstCanvas.getContext("2d");
           tctx.clearRect(0, 0, w, h);
           drawContain(img, tctx, w, h);
-          if (lineObj) {
-            // Calculate scale for thumbnail
-            const imgScale = Math.min(w / img.naturalWidth, h / img.naturalHeight);
-            const dw = img.naturalWidth * imgScale;
-            const dh = img.naturalHeight * imgScale;
-            const dx = (w - dw) / 2;
-            const dy = (h - dh) / 2;
 
-            tctx.lineWidth = 3;
-            tctx.strokeStyle = "#ef4444";
+          // Calculate scale for thumbnail
+          const imgScale = Math.min(w / img.naturalWidth, h / img.naturalHeight);
+          const dw = img.naturalWidth * imgScale;
+          const dh = img.naturalHeight * imgScale;
+          const dx = (w - dw) / 2;
+          const dy = (h - dh) / 2;
+
+          // Draw reference line (green) if provided
+          if (refLineObj) {
+            const tx1 = refLineObj.x1 * imgScale + dx;
+            const ty1 = refLineObj.y1 * imgScale + dy;
+            const tx2 = refLineObj.x2 * imgScale + dx;
+            const ty2 = refLineObj.y2 * imgScale + dy;
+
+            tctx.lineWidth = 2;
+            tctx.strokeStyle = "#22c55e"; // Green for reference line
             tctx.lineCap = "round";
             tctx.beginPath();
-            tctx.moveTo(lineObj.x1, lineObj.y1);
-            tctx.lineTo(lineObj.x2, lineObj.y2);
+            tctx.moveTo(tx1, ty1);
+            tctx.lineTo(tx2, ty2);
             tctx.stroke();
-            tctx.fillStyle = "#16a34a";
+          }
+
+          // Draw measurement line if provided
+          if (lineObj) {
+            const tx1 = lineObj.x1 * imgScale + dx;
+            const ty1 = lineObj.y1 * imgScale + dy;
+            const tx2 = lineObj.x2 * imgScale + dx;
+            const ty2 = lineObj.y2 * imgScale + dy;
+
+            tctx.lineWidth = 2;
+            tctx.strokeStyle = lineColor || "#ef4444"; // Use provided color or default to red
+            tctx.lineCap = "round";
             tctx.beginPath();
-            tctx.arc(lineObj.x1, lineObj.y1, 7, 0, Math.PI * 2);
-            tctx.fill();
+            tctx.moveTo(tx1, ty1);
+            tctx.lineTo(tx2, ty2);
+            tctx.stroke();
           }
           if (label) {
             tctx.fillStyle = "rgba(0,0,0,.55)";
@@ -1669,6 +1712,12 @@
             pxPerInch = null;
             updateUI();
           }
+          // Clear the appropriate input field based on mode
+          if (mode === "D") {
+            if (calculatedDiameter) calculatedDiameter.value = "";
+          } else {
+            if (calculatedLength) calculatedLength.value = "";
+          }
           resetZoom();
           captureStill();
           line = null;
@@ -1703,6 +1752,9 @@
             pxPerInch = px / ref;
             refLine = { ...line }; // Save reference line (already in image coords)
             refStill = still; // Save reference image
+
+            // Don't show thumbnail yet - wait for Step 2
+
             step = 2;
             line = null;
             updateUI();
@@ -1717,18 +1769,21 @@
             }
 
             const inches = px / pxPerInch;
+
             if (mode === "D") {
               measuredD = inches;
-              paintThumb(cThumbD, refStill, line, `≈ ${inches.toFixed(0)} in`);
+              // Show thumbnail with BOTH lines: green reference + red measurement
+              paintThumb(cThumbD, refStill, line, `≈ ${inches.toFixed(0)} in`, "#ef4444", refLine);
               if (vD) vD.textContent = `${inches.toFixed(0)} in`;
-              showGeo();
-              putVal(geoDiameter, inches);
+              // Populate diameter input field
+              if (calculatedDiameter) calculatedDiameter.value = inches.toFixed(0);
             } else {
               measuredL = inches;
-              paintThumb(cThumbL, refStill, line, `≈ ${inches.toFixed(0)} in`);
+              // Show thumbnail with BOTH lines: green reference + red measurement
+              paintThumb(cThumbL, refStill, line, `≈ ${inches.toFixed(0)} in`, "#ef4444", refLine);
               if (vL) vL.textContent = `${inches.toFixed(0)} in`;
-              showGeo();
-              putVal(geoLength, inches);
+              // Populate length input field
+              if (calculatedLength) calculatedLength.value = inches.toFixed(0);
             }
 
             // Reset for next measurement
@@ -1739,8 +1794,62 @@
             pxPerInch = null;
             resetZoom();
             captureStill();
-            note.textContent = "Saved! Switch tabs to measure the other dimension, or Close.";
+            note.textContent = "Measurement complete! Press Apply to use these values, or switch tabs to measure the other dimension.";
             updateUI();
+          }
+        });
+
+        // Apply button - transfer values to main calculator page
+        btnApply.addEventListener("click", () => {
+          const diameterValue = parseFloat(calculatedDiameter.value);
+          const lengthValue = parseFloat(calculatedLength.value);
+
+          let applied = false;
+
+          // Apply diameter if it exists
+          if (isFinite(diameterValue) && diameterValue > 0 && measuredD) {
+            showGeo();
+            putVal(geoDiameter, measuredD);
+            applied = true;
+          }
+
+          // Apply length if it exists
+          if (isFinite(lengthValue) && lengthValue > 0 && measuredL) {
+            showGeo();
+            putVal(geoLength, measuredL);
+            applied = true;
+          }
+
+          if (applied) {
+            // Reset all modal state
+            measuredD = measuredL = null;
+            line = null;
+            refLine = null;
+            refStill = null;
+            still = null;
+            pxPerInch = null;
+            step = 1;
+
+            // Clear input fields
+            if (calculatedDiameter) calculatedDiameter.value = "";
+            if (calculatedLength) calculatedLength.value = "";
+
+            // Clear thumbnails
+            vD.textContent = "";
+            vL.textContent = "";
+            if (cThumbD) {
+              const ctx = cThumbD.getContext("2d");
+              ctx.clearRect(0, 0, cThumbD.width, cThumbD.height);
+            }
+            if (cThumbL) {
+              const ctx = cThumbL.getContext("2d");
+              ctx.clearRect(0, 0, cThumbL.width, cThumbL.height);
+            }
+
+            // Close the modal
+            closeModal();
+          } else {
+            alert("Please complete at least one measurement first by drawing lines and pressing Set.");
           }
         });
 
@@ -1755,6 +1864,9 @@
           step = 1;
           vD.textContent = "";
           vL.textContent = "";
+          // Clear all input fields
+          if (calculatedDiameter) calculatedDiameter.value = "";
+          if (calculatedLength) calculatedLength.value = "";
           resetZoom();
           updateUI();
           openCam().then(() => {
@@ -1771,10 +1883,24 @@
         }
         btnClose.addEventListener("click", closeModal);
 
+        // Ensure modal is closed on page load/hard reload
+        if (modal) {
+          modal.classList.remove("open");
+          closeCam(); // Also close camera if it was left open
+        }
+
         // Wire up main page triggers
         document.getElementById("btnMeasure")?.addEventListener("click", openModal);
+
+        // Track if page just loaded to prevent auto-opening modal on browser form restoration
+        let pageJustLoaded = true;
+        setTimeout(() => { pageJustLoaded = false; }, 100);
+
         document.getElementById("tankType")?.addEventListener("change", (e) => {
-          if (e.target.value === "laydown") openModal();
+          // Only auto-open modal if this is a real user interaction, not initial page load
+          if (e.target.value === "laydown" && !pageJustLoaded) {
+            openModal();
+          }
         });
 
         // Resize
