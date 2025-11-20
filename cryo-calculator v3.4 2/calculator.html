@@ -640,49 +640,47 @@
             </div>
 
             <!-- Timer + Flow -->
-            <div class="box">
-              <b>Timer (optional)</b>
-              <div class="muted">Use the timer and average flow to estimate transfer. You can also estimate the tank diameter from timer data.</div>
-
-              <div style="margin-top: 8px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
+            <label>
+              Timer (optional):
+              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 8px">
                 <button id="btnStart" type="button" class="btn-primary">Start Timer</button>
                 <button id="btnStop" type="button" class="btn-clear" disabled>Stop Timer</button>
                 <span class="inline mono" id="elapsed">Elapsed: 00:00:00</span>
               </div>
+              <div class="muted">Use the timer and average flow to estimate transfer. You can also estimate the tank diameter from timer data.</div>
+            </label>
 
-              <div class="row2" style="margin-top: 8px">
-                <div>
-                  <label>
-                    Avg Flow
-                    <div class="toggle-wrap">
-                      <input type="number" inputmode="decimal" id="flowValue" placeholder="enter value" style="flex: 1" />
-                      <div id="unitSwitch" class="switch" role="switch" aria-checked="false" tabindex="0" title="Toggle gallons ↔ pounds per minute">
-                        <div class="unit-legend">
-                          <span class="gal">gal</span>
-                          <span class="lb">lb</span>
-                        </div>
-                        <div class="knob"></div>
+            <div class="row2">
+              <div>
+                <label>
+                  Avg Flow
+                  <div class="toggle-wrap">
+                    <input type="number" inputmode="decimal" id="flowValue" placeholder="enter value" style="flex: 1" />
+                    <div id="unitSwitch" class="switch" role="switch" aria-checked="false" tabindex="0" title="Toggle gallons ↔ pounds per minute">
+                      <div class="unit-legend">
+                        <span class="gal">gal</span>
+                        <span class="lb">lb</span>
                       </div>
+                      <div class="knob"></div>
                     </div>
-                    <div class="muted">Toggle left = Gallons/min (default), right = Pounds/min.</div>
-                  </label>
-                </div>
-                <div style="display: flex; align-items: end; gap: 12px; flex-wrap: wrap">
-                  <label style="display: flex; gap: 8px; align-items: center">
-                    <input type="checkbox" id="chkEstimateD" style="width: auto" />
-                    <span>Estimate diameter from timer</span>
-                  </label>
-                  <label style="display: flex; gap: 8px; align-items: center">
-                    <input type="checkbox" id="useTimerPrimary" style="width: auto" />
-                    <span>Use timer as primary (ignore inches for total)</span>
-                  </label>
-                </div>
+                  </div>
+                  <div class="muted">Toggle left = Gallons/min (default), right = Pounds/min.</div>
+                </label>
               </div>
-
-              <div class="muted">
-                When “Use timer as primary” is on, total moved = (elapsed minutes × Flow) → converted to SCF by gas. Inches still show as a
-                cross-check.
+              <div style="display: flex; align-items: end; gap: 12px; flex-wrap: wrap">
+                <label style="display: flex; gap: 8px; align-items: center">
+                  <input type="checkbox" id="chkEstimateD" style="width: auto" />
+                  <span>Estimate diameter from timer</span>
+                </label>
+                <label style="display: flex; gap: 8px; align-items: center">
+                  <input type="checkbox" id="useTimerPrimary" style="width: auto" />
+                  <span>Use timer as primary (ignore inches for total)</span>
+                </label>
               </div>
+            </div>
+            <div class="muted">
+              When "Use timer as primary" is on, total moved = (elapsed minutes × Flow) → converted to SCF by gas. Inches still show as a
+              cross-check.
             </div>
 
             <div class="actions">
@@ -1370,13 +1368,9 @@
 
             ctx.restore();
           } else if (video && video.videoWidth) {
-            // Show video when no still image (flipped to correct mirror effect)
+            // Show video when no still image
             if (video) video.style.opacity = "1";
-            ctx.save();
-            ctx.scale(-1, 1);
-            ctx.translate(-w, 0);
             ctx.drawImage(video, 0, 0, w, h);
-            ctx.restore();
           } else {
             ctx.fillStyle = "#000";
             ctx.fillRect(0, 0, w, h);
@@ -1407,10 +1401,7 @@
           const tmp = document.createElement("canvas");
           tmp.width = video.videoWidth;
           tmp.height = video.videoHeight;
-          // Flip horizontally to correct mirror effect
           const tmpCtx = tmp.getContext("2d");
-          tmpCtx.scale(-1, 1);
-          tmpCtx.translate(-tmp.width, 0);
           tmpCtx.drawImage(video, 0, 0);
           const img = new Image();
           img.onload = () => {
@@ -2353,23 +2344,23 @@
         (function injectTopUI() {
           if (!splitRoot || !totalScfEl) return;
 
-          // Wrap Total SCF + Gas in a 2-col row
+          // Wrap Total SCF + Gas in a full-width column
           let topRow = document.getElementById("splitTopRow");
           if (!topRow) {
             topRow = document.createElement("div");
             topRow.id = "splitTopRow";
-            topRow.style.display = "grid";
-            topRow.style.gridTemplateColumns = "1fr 1fr";
+            topRow.style.display = "flex";
+            topRow.style.flexDirection = "column";
             topRow.style.gap = "10px";
             topRow.style.marginTop = "8px";
 
-            // Find the "Total SCF" label and move it into col 1
+            // Find the "Total SCF" label and move it to the top
             const totalLabel = totalScfEl.closest("label");
             if (totalLabel) {
               topRow.appendChild(totalLabel);
             }
 
-            // Create Gas dropdown (col 2)
+            // Create Gas dropdown below
             const gasWrap = document.createElement("label");
             gasWrap.id = "splitGasWrap";
             gasWrap.innerHTML = `

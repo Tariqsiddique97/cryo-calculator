@@ -1,6 +1,6 @@
 // ---- VERSION ----
-const CACHE_STATIC = 'cryo-static-v2';
-const CACHE_RUNTIME = 'cryo-runtime-v2';
+const CACHE_STATIC = 'cryo-static-v3';
+const CACHE_RUNTIME = 'cryo-runtime-v3';
 
 // Resolve paths relative to the service worker scope (safe for subpaths)
 const SCOPE_URL = new URL(self.registration.scope);
