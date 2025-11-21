@@ -175,7 +175,7 @@
         gap: 10px;
       }
       @media (max-width: 520px) {
-        .row2 {
+        .pane:not(#pane-split):not(#pane-reserve) .row2 {
           grid-template-columns: 1fr;
         }
       }
@@ -312,21 +312,16 @@
         gap: 10px;
         margin-top: 8px;
       }
-      /* Smaller buttons for Split/Reserve panes */
+      /* Split/Reserve button layout - match Tank calculator */
       #pane-split .sticky-actions,
       #pane-reserve .sticky-actions {
-        gap: 8px;
+        gap: 10px;
+        flex-wrap: wrap;
       }
       #pane-split .sticky-actions button,
       #pane-reserve .sticky-actions button {
-        font-size: 14px;
-        padding: 8px 16px;
-        flex: 1;
-      }
-      #pane-split .btn-primary,
-      #pane-reserve .btn-primary {
-        font-size: 14px;
-        padding: 8px 14px;
+        flex: 0 0 auto;
+        width: auto;
       }
       .err {
         margin-top: 8px;
@@ -380,7 +375,7 @@
       #pane-split #calcSplit {
         position: sticky;
         bottom: calc(env(safe-area-inset-bottom) + 8px);
-        width: 100%;
+        /* width: 100%; */
         z-index: 9;
       }
       .sticky-actions {
@@ -392,12 +387,6 @@
         background: Canvas;
         padding-top: 10px;
         z-index: 9;
-      }
-      .sticky-actions .btn {
-        width: 100%;
-      }
-      .sticky-actions .btn-clear {
-        width: 100%;
       }
 
       /* Modal */
@@ -679,8 +668,7 @@
               </div>
             </div>
             <div class="muted">
-              When "Use timer as primary" is on, total moved = (elapsed minutes × Flow) → converted to SCF by gas. Inches still show as a
-              cross-check.
+              When "Use timer as primary" is on, total moved = (elapsed minutes × Flow) → converted to SCF by gas. Inches still show as a cross-check.
             </div>
 
             <div class="actions">
@@ -704,7 +692,7 @@
                 <div class="muted" style="margin-bottom: 4px">Total SCF</div>
                 <input id="totalScf" type="number" placeholder="0" />
                 <!-- <div class="muted"><u>Auto-fills after Calculate.</u></div> -->
-                <button id="splitUpdate" type="button" class="btn btn-primary" style="margin-top: 8px">Update</button>
+                <button id="splitUpdate" type="button" class="btn-primary" style="margin-top: 8px">Update</button>
               </div>
               <div>
                 <div class="muted" style="margin-bottom: 4px; visibility: hidden">-</div>
@@ -782,9 +770,9 @@
             </div>
 
             <div class="sticky-actions">
-              <button id="calcSplit" class="btn btn-primary">Calculate</button>
+              <button id="calcSplit" class="btn-primary">Calculate</button>
               <button id="clearSplit" class="btn-clear" type="button">Clear</button>
-              <button type="button" class="btn btn-primary" onclick="window.goToReserve()">> Reserve</button>
+              <button type="button" class="btn-primary" onclick="window.goToReserve()">> Reserve</button>
             </div>
           </div>
         </section>
@@ -799,7 +787,7 @@
               <div class="muted" style="margin-bottom: 4px">Total Pounds /Gallons to SCF</div>
               <div style="display: flex; gap: 10px; align-items: center">
                 <input id="resGallons" type="number" placeholder="0" maxlength="6" max="999999" inputmode="numeric" />
-                <button id="resUpdate" type="button" class="btn btn-primary">Update</button>
+                <button id="resUpdate" type="button" class="btn-primary">Update</button>
               </div>
               <div class="muted">Pounds on COA translated to SCF (uses gas below, max 6 digits). SCF is capped at 999,999</div>
               <div id="resHint" class="muted" style="margin-top: 6px"></div>
@@ -852,7 +840,7 @@
             </div>
 
             <div class="sticky-actions">
-              <button id="resClear" class="btn btn-primary" type="button">Clear</button>
+              <button id="resClear" class="btn-primary" type="button">Clear</button>
               <button class="btn-ghost" type="button" onclick="window.goToCalc()">← Home</button>
             </div>
           </div>
@@ -2390,7 +2378,7 @@
             const btn = document.createElement("button");
             btn.id = "splitUpdate";
             btn.type = "button";
-            btn.className = "btn btn-primary";
+            btn.className = "btn-primary";
             btn.textContent = "Update";
             row2.appendChild(btn);
 
